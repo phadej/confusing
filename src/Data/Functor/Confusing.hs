@@ -43,7 +43,7 @@ module Data.Functor.Confusing (
     fusing, confusing, LensLike,
     ifusing, iconfusing, IxLensLike,
     ffusing, fconfusing, FLensLike,
-    liftCurriedYoneda, yap,
+    CurriedYoneda, lowerCurriedYoneda, liftCurriedYoneda, yap,
     Curried (..), liftCurried, lowerCurried,
     Yoneda (..), liftYoneda, lowerYoneda,
   ) where
@@ -63,16 +63,8 @@ fusing t = \f -> lowerYoneda .  t (liftYoneda . f)
 {-# INLINE fusing #-}
 
 confusing :: Control.Applicative.Applicative f => LensLike (Curried (Yoneda f)) s t a b -> LensLike f s t a b
-confusing t = \f -> lowerYoneda . lowerCurried . t (liftCurriedYoneda . f)
+confusing t = \f -> lowerCurriedYoneda . t (liftCurriedYoneda . f)
 {-# INLINE confusing #-}
-
-liftCurriedYoneda :: Applicative f => f a -> Curried (Yoneda f) a
-liftCurriedYoneda fa = Curried (`yap` fa)
-{-# INLINE liftCurriedYoneda #-}
-
-yap :: Applicative f => Yoneda f (a -> b) -> f a -> Yoneda f b
-yap (Yoneda k) fa = Yoneda (\ab_r -> k (ab_r .) <*> fa)
-{-# INLINE yap #-}
 
 type IxLensLike f i s t a b = (i -> a -> f b) -> s -> f t
 
@@ -93,6 +85,24 @@ ffusing t = \f -> lowerYoneda . t (liftYoneda . f)
 fconfusing :: Applicative f => FLensLike (Curried (Yoneda f)) s t a b -> FLensLike f s t a b
 fconfusing t = \f -> lowerYoneda . lowerCurried . t (liftCurriedYoneda . f)
 {-# INLINE fconfusing #-}
+
+-------------------------------------------------------------------------------
+-- CurriedYoneda
+-------------------------------------------------------------------------------
+
+type CurriedYoneda f = Curried (Yoneda f)
+
+lowerCurriedYoneda :: Applicative f => Curried (Yoneda f) a -> f a
+lowerCurriedYoneda = lowerYoneda . lowerCurried
+{-# INLINE lowerCurriedYoneda #-}
+
+liftCurriedYoneda :: Applicative f => f a -> Curried (Yoneda f) a
+liftCurriedYoneda fa = Curried (`yap` fa)
+{-# INLINE liftCurriedYoneda #-}
+
+yap :: Applicative f => Yoneda f (a -> b) -> f a -> Yoneda f b
+yap (Yoneda k) fa = Yoneda (\ab_r -> k (ab_r .) <*> fa)
+{-# INLINE yap #-}
 
 -------------------------------------------------------------------------------
 -- Curried
